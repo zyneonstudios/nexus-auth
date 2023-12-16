@@ -29,5 +29,3 @@ Class with Authentication process for Minecraft launchers and account switchers
 460: Adjust finishing message on auth
 535: Same here
 ```
-
-Feel free to adapt the styling to your preferences!
