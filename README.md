@@ -1,27 +1,33 @@
+# Tutorial: Azure App Registration for Mojang Authentication
 
-> Use this tutorial to create a Azure Application and request access to Mojang auth.
+Follow this [tutorial](https://scribehow.com/shared/Creating_a_new_Azure_app_registration_and_submitting_for_Minecraft_access_approval__Ev1zNgspTgOWN2VpbB1klw) to create an Azure Application and request access to Mojang authentication.
 
-https://scribehow.com/shared/Creating_a_new_Azure_app_registration_and_submitting_for_Minecraft_access_approval__Ev1zNgspTgOWN2VpbB1klw
+## Next Steps - Edit SRC
 
-> Next Steps - Edit SRC
+### `app/elizon/authhelper/AuthHelper`
 
-app <hr>
-  elizon <hr>
-    authhelper <hr>
-      - AuthHelper 
-      <p>Example Integration</p><hr>
-      process <hr>
-      - AuthProcess
-      <p>API for using the Processes</p><hr>
-      impl <hr>
-      - ProcessDetails
-      <p>Interface Class for structure</p>
-      - MinecraftMSLiveAuthProcess
-      <p>Class with Authentication process for minecraft launchers and account switchers</p>
-      29: Change Client ID to given on Azure
-      35: Same here
-      32: Leave it as is or change port
-      36: Same here
-      38: Adjust timeout for auth-wait
-      460: Adjust finishing message on auth
-      535: Same here
+Example Integration
+
+### `app/elizon/authhelper/process/AuthProcess`
+
+API for using the Processes
+
+### `app/elizon/authhelper/impl/ProcessDetails`
+
+Interface Class for structure
+
+### `app/elizon/authhelper/impl/MinecraftMSLiveAuthProcess`
+
+Class with Authentication process for Minecraft launchers and account switchers
+
+```plaintext
+29: Change Client ID to the one given on Azure
+35: Same here
+32: Leave it as is or change the port
+36: Same here
+38: Adjust timeout for auth-wait
+460: Adjust finishing message on auth
+535: Same here
+```
+
+Feel free to adapt the styling to your preferences!
