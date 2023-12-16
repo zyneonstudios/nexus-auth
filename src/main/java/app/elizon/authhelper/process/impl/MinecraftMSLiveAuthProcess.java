@@ -456,6 +456,13 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                         throw new IllegalStateException("Invalid query: " + ret.get());
                     }
 
+                    try {
+                        byte[] bytes = "<p>Authentication process started. You can now close this page.</p>".getBytes();
+                        exchange.sendResponseHeaders(200, bytes.length);
+                        exchange.getResponseBody().write(bytes);
+                        exchange.getResponseBody().flush();
+                    } catch (Exception ignored) {}
+
                     // Entfernen Sie den Code-Präfix
                     ret.set(ret.get().replace("code=", ""));
                     System.out.println("Extracted code: " + ret.get());
@@ -475,7 +482,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                     Map<String, String> codeChallengeAndVerifier = generateCodeChallengeAndVerifier();
 
                     try (OutputStream out = conn.getOutputStream()) {
-                        out.write(("client_id=" + URLEncoder.encode(MinecraftMSLiveAuthProcess.client_id, "UTF-8") + "&" +
+                        out.write(("client_id=" + URLEncoder.encode(client_id, "UTF-8") + "&" +
                                 "code=" + URLEncoder.encode(ret.get(), "UTF-8") + "&" +
                                 "grant_type=authorization_code&" +
                                 "redirect_uri=" + URLEncoder.encode("http://localhost:48521", "UTF-8") + "&" +
