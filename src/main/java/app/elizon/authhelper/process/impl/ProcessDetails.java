@@ -5,10 +5,13 @@ import java.util.HashMap;
 
 public abstract class ProcessDetails {
 
-    public HashMap<String, String> login(String accessToken, String refreshToken) { return null;}
+    @SuppressWarnings("all")
+    public HashMap<String, String> login() { return null;}
 
+    @SuppressWarnings("all")
     public HashMap<String, String> relogin(String refreshToken) { return null;}
 
-    public HashMap<String, String> logout() { return null;}
+    @SuppressWarnings("all")
+    public boolean logout() { return true;}
 
 }

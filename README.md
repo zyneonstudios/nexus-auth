@@ -1,0 +1,1 @@
+<iframe src="https://scribehow.com/embed/Creating_a_new_Azure_app_registration_and_submitting_for_Minecraft_access_approval__Ev1zNgspTgOWN2VpbB1klw?as=scrollable" width="100%" height="640" allowfullscreen frameborder="0"></iframe>

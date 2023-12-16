@@ -1,19 +1,22 @@
 package app.elizon.authhelper;
 
-import app.elizon.authhelper.server.ServerHelper;
+import app.elizon.authhelper.process.AuthProcess;
+import app.elizon.authhelper.process.impl.MinecraftMSLiveAuthProcess;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 
 public class AuthHelper {
 
-    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
-        int local_port = 48521;
+    public static void main(String[] args) {
+        AuthProcess process = new AuthProcess();
 
-        ServerHelper helper = new ServerHelper();
+        System.out.println(
+                process.startAuthProcess(new MinecraftMSLiveAuthProcess())
+        );
 
-        helper.startServer(local_port);
-
+        System.out.println(
+                process.reAuth(new MinecraftMSLiveAuthProcess(), "your_refresh_token")
+        );
     }
 
 }

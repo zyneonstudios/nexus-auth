@@ -1,6 +1,9 @@
 package app.elizon.authhelper.process.impl;
 
-import app.elizon.authhelper.server.ServerHelper;
+import app.elizon.authhelper.window.WindowHelper;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -8,88 +11,68 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
+
     public static final String MICROSOFT_AUTH_URL = "https://login.live.com/oauth20_authorize.srf" +
-            "?client_id=XXX" +
+            "?client_id=YOUR_CLIENT_ID_HERE" +
             "&response_type=code" +
             "&scope=XboxLive.signin%20XboxLive.offline_access" +
-            "&redirect_uri=http%3A%2F%2Flocalhost%3A48521" +
+            "&redirect_uri=http%3A%2F%2Flocalhost%3A" + "48521" +
             "&prompt=select_account";
 
-    private final static String client_id = "XXX";
+    public final static String client_id = "YOUR_CLIENT_ID_HERE";
     private final static Integer local_port = 48521;
 
-    @Override
-    public HashMap<String, String> login(String accessToken, String refreshToken) {
+    private final static Integer loginTimeoutInSeconds = 300;
 
-        System.out.println("received");
+    @Override
+    public HashMap<String, String> login() {
+        ServerHelper helper = new ServerHelper();
+
+        new Thread(() -> {
+            try {
+                helper.startServer(local_port);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        //wait for answer
+
+        for(int i = loginTimeoutInSeconds; i > 0 && ServerHelper.data.isEmpty(); i--) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        helper.stopServer();
+
+        return startlogin(ServerHelper.data.get("access"), ServerHelper.data.get("refresh"));
+    }
+
+    public HashMap<String, String> startlogin(String accessToken, String refreshToken) {
 
         try {
 
-            System.out.println("started");
-
-            /*if(!ret.startsWith("code=")) {
-                throw new IllegalStateException("query={" + query + "}");
-            }
-
-
-            //get refresh token
-
-            query = query.replace("code=", "");
-
-            String accessToken = null;
-            String refreshToken = null;
-
-            System.out.println("HERE");
-
-            HttpURLConnection conn = (HttpURLConnection) new URL("https://login.live.com/oauth20_token.srf").openConnection();
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setRequestMethod("POST");
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(15000);
-            conn.setDoOutput(true);
-            try (OutputStream out = conn.getOutputStream()) {
-                out.write(("client_id=" + URLEncoder.encode(client_id, "UTF-8") + "&" +
-                        "code=" + URLEncoder.encode(query, "UTF-8") + "&" +
-                        "grant_type=authorization_code&" +
-                        "redirect_uri=" + URLEncoder.encode("http://localhost:" + local_port, "UTF-8") + "&" +
-                        "scope=XboxLive.signin%20XboxLive.offline_access").getBytes(StandardCharsets.UTF_8));
-                if (conn.getResponseCode() < 200 || conn.getResponseCode() > 299) {
-                    try (BufferedReader err = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
-                        throw new IllegalArgumentException("codeToToken response: " + conn.getResponseCode() + ", data: " + err.lines().collect(Collectors.joining("\n")));
-                    } catch (Throwable t) {
-                        throw new IllegalArgumentException("codeToToken response: " + conn.getResponseCode(), t);
-                    }
-                }
-
-                System.out.println("HERE");
-
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                    JSONObject object = new JSONObject(in.lines().collect(Collectors.joining("\n")));
-
-                    accessToken = object.getString("access_token");
-                    refreshToken = object.getString("refresh_token");
-
-                    System.out.println("access: " + accessToken);
-                    System.out.println("refresh: " + refreshToken);
-                }
-            }
-
-            conn.disconnect();*/
-
             //get xbl token
 
-            String XboxLiveToken = null;
+            String XboxLiveToken;
 
-            HttpURLConnection conn = (HttpURLConnection) new URL("https://user.auth.xboxlive.com/user/authenticate").openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI("https://user.auth.xboxlive.com/user/authenticate").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestMethod("POST");
@@ -121,12 +104,14 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             conn.disconnect();
 
+            System.out.println("XBL-Token: " + XboxLiveToken);
+
             //get xsts token and userhash from xbl token
 
-            String UHS = null;
-            String XSTS = null;
+            String UHS;
+            String XSTS;
 
-            conn = (HttpURLConnection) new URL("https://xsts.auth.xboxlive.com/xsts/authorize").openConnection();
+            conn = (HttpURLConnection) new URI("https://xsts.auth.xboxlive.com/xsts/authorize").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestMethod("POST");
@@ -159,13 +144,15 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                 }
             }
 
+            System.out.println("UHS: " + UHS);
+            System.out.println("XSTS: " + XSTS);
             conn.disconnect();
 
             //auth minecraft
 
-            String minecraft_token = null;
+            String minecraft_token;
 
-            conn = (HttpURLConnection) new URL("https://api.minecraftservices.com/authentication/login_with_xbox").openConnection();
+            conn = (HttpURLConnection) new URI("https://api.minecraftservices.com/authentication/login_with_xbox").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestMethod("POST");
@@ -189,12 +176,14 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                 }
             }
 
+            System.out.println("MC-Token: " + minecraft_token);
+
             conn.disconnect();
 
-            String uuid = null;
-            String name = null;
+            String uuid;
+            String name;
 
-            conn = (HttpURLConnection) new URL("https://api.minecraftservices.com/minecraft/profile").openConnection();
+            conn = (HttpURLConnection) new URI("https://api.minecraftservices.com/minecraft/profile").toURL().openConnection();
             conn.setRequestProperty("Authorization", "Bearer " + minecraft_token);
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(15000);
@@ -213,7 +202,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             }
 
             HashMap<String, String> data = new HashMap<>();
-            data.put("xbl_refresh_token", refreshToken);
+            data.put("ms_refresh_token", refreshToken);
             data.put("minecraft_token", minecraft_token);
             data.put("uuid", uuid);
             data.put("username", name);
@@ -222,7 +211,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             System.out.println(data);
 
             return data;
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
@@ -236,7 +225,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             ServerHelper helper = new ServerHelper();
             helper.startServerHeadless(local_port);
 
-            HttpURLConnection conn = (HttpURLConnection) new URL("https://login.live.com/oauth20_token.srf").openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI("https://login.live.com/oauth20_token.srf").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(15000);
@@ -263,9 +252,9 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             //get xbl token
 
-            String XboxLiveToken = null;
+            String XboxLiveToken;
 
-            conn = (HttpURLConnection) new URL("https://user.auth.xboxlive.com/user/authenticate").openConnection();
+            conn = (HttpURLConnection) new URI("https://user.auth.xboxlive.com/user/authenticate").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestMethod("POST");
@@ -299,10 +288,10 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             //get xsts token and userhash from xbl token
 
-            String UHS = null;
-            String XSTS = null;
+            String UHS;
+            String XSTS;
 
-            conn = (HttpURLConnection) new URL("https://xsts.auth.xboxlive.com/xsts/authorize").openConnection();
+            conn = (HttpURLConnection) new URI("https://xsts.auth.xboxlive.com/xsts/authorize").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestMethod("POST");
@@ -339,9 +328,9 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             //auth minecraft
 
-            String minecraft_token = null;
+            String minecraft_token;
 
-            conn = (HttpURLConnection) new URL("https://api.minecraftservices.com/authentication/login_with_xbox").openConnection();
+            conn = (HttpURLConnection) new URI("https://api.minecraftservices.com/authentication/login_with_xbox").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestMethod("POST");
@@ -367,10 +356,10 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             conn.disconnect();
 
-            String uuid = null;
-            String name = null;
+            String uuid;
+            String name;
 
-            conn = (HttpURLConnection) new URL("https://api.minecraftservices.com/minecraft/profile").openConnection();
+            conn = (HttpURLConnection) new URI("https://api.minecraftservices.com/minecraft/profile").toURL().openConnection();
             conn.setRequestProperty("Authorization", "Bearer " + minecraft_token);
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(15000);
@@ -389,7 +378,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             }
 
             HashMap<String, String> data = new HashMap<>();
-            data.put("xbl_refresh_token", refreshToken);
+            data.put("ms_refresh_token", refreshToken);
             data.put("minecraft_token", minecraft_token);
             data.put("uuid", uuid);
             data.put("username", name);
@@ -401,4 +390,172 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             throw new RuntimeException(ex);
         }
     }
+
+    public static class ServerHelper {
+
+        public static final HashMap<String, String> data = new HashMap<>();
+
+        // Funktion zur Generierung des code_challenge und code_verifier
+        private static Map<String, String> generateCodeChallengeAndVerifier() {
+            SecureRandom secureRandom = new SecureRandom();
+            byte[] codeVerifierBytes = new byte[32];
+            secureRandom.nextBytes(codeVerifierBytes);
+            String codeVerifier = Base64.getUrlEncoder().withoutPadding().encodeToString(codeVerifierBytes);
+
+            MessageDigest md;
+            try {
+                md = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+            byte[] codeChallengeBytes = md.digest(codeVerifier.getBytes(StandardCharsets.US_ASCII));
+            String codeChallenge = Base64.getUrlEncoder().withoutPadding().encodeToString(codeChallengeBytes);
+
+            Map<String, String> result = new HashMap<>();
+            result.put("code_challenge", codeChallenge);
+            result.put("code_verifier", codeVerifier);
+
+            return result;
+        }
+
+        private static String verifier;
+        private HttpServer server;
+
+        @SuppressWarnings("unused")
+        public void startServer(int port) throws IOException {
+            server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
+
+            server.createContext("/", new WebHandler());
+
+            server.start();
+
+            // Öffnen Sie das Authentifizierungsfenster
+
+            Map<String, String> codes = generateCodeChallengeAndVerifier();
+            verifier = codes.get("code_verifier");
+
+            new WindowHelper().openWindow(MinecraftMSLiveAuthProcess.MICROSOFT_AUTH_URL+"&code_challenge=" + codes.get("code_challenge") + "&code_challenge_method=S256");
+        }
+
+        public void stopServer() {
+            server.stop(5);
+        }
+
+        static class WebHandler implements HttpHandler {
+            @Override
+            public void handle(HttpExchange exchange) {
+                AtomicReference<String> ret = new AtomicReference<>(null);
+
+                try {
+                    ret.set(exchange.getRequestURI().getQuery());
+                    System.out.println("Received query: " + ret.get());
+
+                    System.out.println("Server started");
+
+                    if (!ret.get().startsWith("code=")) {
+                        throw new IllegalStateException("Invalid query: " + ret.get());
+                    }
+
+                    // Entfernen Sie den Code-Präfix
+                    ret.set(ret.get().replace("code=", ""));
+                    System.out.println("Extracted code: " + ret.get());
+
+                    String accessToken;
+                    String refreshToken;
+
+                    System.out.println("Sending request to Microsoft server");
+
+                    HttpURLConnection conn = (HttpURLConnection) new URI("https://login.live.com/oauth20_token.srf").toURL().openConnection();
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    conn.setRequestMethod("POST");
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(15000);
+                    conn.setDoOutput(true);
+
+                    Map<String, String> codeChallengeAndVerifier = generateCodeChallengeAndVerifier();
+
+                    try (OutputStream out = conn.getOutputStream()) {
+                        out.write(("client_id=" + URLEncoder.encode(MinecraftMSLiveAuthProcess.client_id, "UTF-8") + "&" +
+                                "code=" + URLEncoder.encode(ret.get(), "UTF-8") + "&" +
+                                "grant_type=authorization_code&" +
+                                "redirect_uri=" + URLEncoder.encode("http://localhost:48521", "UTF-8") + "&" +
+                                "scope=XboxLive.signin%20XboxLive.offline_access" +
+                                "&code_verifier=" + URLEncoder.encode(verifier, "UTF-8") +
+                                "&code_challenge=" + URLEncoder.encode(codeChallengeAndVerifier.get("code_challenge"), "UTF-8") +
+                                "&code_challenge_method=S256").getBytes(StandardCharsets.UTF_8));
+
+                        if (conn.getResponseCode() < 200 || conn.getResponseCode() > 299) {
+                            try (BufferedReader err = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                                System.out.println("1");
+                                throw new IllegalArgumentException("codeToToken response: " + conn.getResponseCode() + ", data: " + err.lines().collect(Collectors.joining("\n")));
+                            } catch (Throwable t) {
+                                System.out.println("2");
+                                throw new IllegalArgumentException("codeToToken response: " + conn.getResponseCode(), t);
+                            }
+                        }
+
+                        System.out.println("Received response from Microsoft server");
+
+                        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                            JSONObject object = new JSONObject(in.lines().collect(Collectors.joining("\n")));
+
+                            accessToken = object.getString("access_token");
+                            refreshToken = object.getString("refresh_token");
+
+                            System.out.println("Access Token: " + accessToken);
+                            System.out.println("Refresh Token: " + refreshToken);
+                        }
+                    }
+
+                    data.put("access", accessToken);
+                    data.put("refresh", refreshToken);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        public void startServerHeadless(int port) throws IOException {
+            HttpServer server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
+
+            AtomicReference<String> ret = new AtomicReference<>(null);
+
+            server.createContext("/", exchange -> {
+
+                ret.set(exchange.getRequestURI().getQuery());
+
+                try {
+                    exchange.getRequestHeaders().add("Content-Type", "text/html; charset=UTF-8");
+
+
+
+
+
+
+                    byte[] bytes = "<p>Authentication process started. You can now close this page.</p>".getBytes();
+
+
+
+
+
+
+
+
+                    exchange.sendResponseHeaders(200, bytes.length);
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(bytes);
+                        os.flush();
+                    }
+                } catch (Exception ex) {
+                    server.stop(0);
+                } finally {
+                    server.stop(0);
+                }
+            });
+
+            System.out.println(ret.get());
+        }
+
+    }
+
 }
