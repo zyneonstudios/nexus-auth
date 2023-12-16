@@ -38,6 +38,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
     private final static Integer loginTimeoutInSeconds = 300;
 
     @Override
+    @SuppressWarnings("all")
     public HashMap<String, String> login() {
         ServerHelper helper = new ServerHelper();
 
