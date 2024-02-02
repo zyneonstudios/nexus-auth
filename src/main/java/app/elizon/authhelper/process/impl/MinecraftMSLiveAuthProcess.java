@@ -35,10 +35,25 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
     private final static Integer loginTimeoutInSeconds = 300;
 
+    ServerHelper helper;
+
+    public ServerHelper getServer() {
+        if(helper==null) {
+            helper = new ServerHelper();
+        }
+        return helper;
+    }
+
+    public void setServer(ServerHelper helper) {
+        this.helper = helper;
+    }
+
     @Override
     @SuppressWarnings("all")
     public HashMap<String, String> login() {
-        ServerHelper helper = new ServerHelper();
+        if(helper==null) {
+            helper = new ServerHelper();
+        }
 
         new Thread(() -> {
             try {
@@ -216,7 +231,9 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             String accessToken;
 
-            ServerHelper helper = new ServerHelper();
+            if(helper!=null) {
+                helper = new ServerHelper();
+            }
             helper.startServerHeadless(local_port);
 
             HttpURLConnection conn = (HttpURLConnection) new URI("https://login.live.com/oauth20_token.srf").toURL().openConnection();

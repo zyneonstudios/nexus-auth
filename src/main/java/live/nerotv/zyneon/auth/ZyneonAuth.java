@@ -12,13 +12,18 @@ public class ZyneonAuth {
         HashMap<AuthInfo,String> map = new HashMap<>();
         try {
             //AUTHENTICATE AND RETURN DATA
-            HashMap<String, String> authData = new AuthProcess().startAuthProcess(new MinecraftMSLiveAuthProcess());
+            MinecraftMSLiveAuthProcess process = new MinecraftMSLiveAuthProcess();
+            HashMap<String, String> authData = new AuthProcess().startAuthProcess(process);
 
             //ADDING DATA FROM AUTH DATA TO MAP
             map.put(AuthInfo.ACCESS_TOKEN,authData.get("minecraft_token"));
             map.put(AuthInfo.REFRESH_TOKEN,authData.get("ms_refresh_token"));
             map.put(AuthInfo.USERNAME,authData.get("username"));
             map.put(AuthInfo.UUID,authData.get("uuid"));
+
+            process.getServer().stopServer();
+            process.setServer(null);
+            System.gc();
         } catch (Exception e) {
             //RETURNING NULL IF ERROR
             return null;
@@ -32,13 +37,18 @@ public class ZyneonAuth {
         HashMap<AuthInfo,String> map = new HashMap<>();
         try {
             //AUTHENTICATE AND RETURN DATA
-            HashMap<String, String> authData = new AuthProcess().reAuth(new MinecraftMSLiveAuthProcess(), refreshToken);
+            MinecraftMSLiveAuthProcess process = new MinecraftMSLiveAuthProcess();
+            HashMap<String, String> authData = new AuthProcess().reAuth(process, refreshToken);
 
             //ADDING DATA FROM AUTH DATA TO MAP
             map.put(AuthInfo.ACCESS_TOKEN,authData.get("minecraft_token"));
             map.put(AuthInfo.REFRESH_TOKEN,authData.get("ms_refresh_token"));
             map.put(AuthInfo.USERNAME,authData.get("username"));
             map.put(AuthInfo.UUID,authData.get("uuid"));
+
+            process.getServer().stopServer();
+            process.setServer(null);
+            System.gc();
         } catch (Exception e) {
             //RETURNING NULL IF ERROR
             return null;
