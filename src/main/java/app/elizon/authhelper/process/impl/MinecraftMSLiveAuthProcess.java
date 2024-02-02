@@ -24,15 +24,13 @@ import java.util.stream.Collectors;
 
 public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
-
+    public final static String client_id = "055da844-b0ca-4643-b596-2e9b59987b39";
     public static final String MICROSOFT_AUTH_URL = "https://login.live.com/oauth20_authorize.srf" +
-            "?client_id=YOUR_CLIENT_ID_HERE" +
+            "?client_id="+client_id +
             "&response_type=code" +
             "&scope=XboxLive.signin%20XboxLive.offline_access" +
             "&redirect_uri=http%3A%2F%2Flocalhost%3A" + "48521" +
             "&prompt=select_account";
-
-    public final static String client_id = "YOUR_CLIENT_ID_HERE";
     private final static Integer local_port = 48521;
 
     private final static Integer loginTimeoutInSeconds = 300;
@@ -105,8 +103,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             conn.disconnect();
 
-            System.out.println("XBL-Token: " + XboxLiveToken);
-
             //get xsts token and userhash from xbl token
 
             String UHS;
@@ -145,8 +141,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                 }
             }
 
-            System.out.println("UHS: " + UHS);
-            System.out.println("XSTS: " + XSTS);
             conn.disconnect();
 
             //auth minecraft
@@ -177,8 +171,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                 }
             }
 
-            System.out.println("MC-Token: " + minecraft_token);
-
             conn.disconnect();
 
             String uuid;
@@ -208,8 +200,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             data.put("uuid", uuid);
             data.put("username", name);
 
-
-            System.out.println(data);
 
             return data;
         } catch (IOException | URISyntaxException e) {
@@ -384,8 +374,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             data.put("uuid", uuid);
             data.put("username", name);
 
-            System.out.println(data);
-
             return data;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -396,7 +384,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
         public static final HashMap<String, String> data = new HashMap<>();
 
-        // Funktion zur Generierung des code_challenge und code_verifier
         private static Map<String, String> generateCodeChallengeAndVerifier() {
             SecureRandom secureRandom = new SecureRandom();
             byte[] codeVerifierBytes = new byte[32];
@@ -430,7 +417,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             server.start();
 
-            // Öffnen Sie das Authentifizierungsfenster
 
             Map<String, String> codes = generateCodeChallengeAndVerifier();
             verifier = codes.get("code_verifier");
@@ -449,10 +435,8 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
                 try {
                     ret.set(exchange.getRequestURI().getQuery());
-                    System.out.println("Received query: " + ret.get());
 
-                    System.out.println("Server started");
-
+                    ret.get();
                     if (!ret.get().startsWith("code=")) {
                         throw new IllegalStateException("Invalid query: " + ret.get());
                     }
@@ -464,14 +448,11 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                         exchange.getResponseBody().flush();
                     } catch (Exception ignored) {}
 
-                    // Entfernen Sie den Code-Präfix
                     ret.set(ret.get().replace("code=", ""));
-                    System.out.println("Extracted code: " + ret.get());
 
                     String accessToken;
                     String refreshToken;
 
-                    System.out.println("Sending request to Microsoft server");
 
                     HttpURLConnection conn = (HttpURLConnection) new URI("https://login.live.com/oauth20_token.srf").toURL().openConnection();
                     conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -494,15 +475,12 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
                         if (conn.getResponseCode() < 200 || conn.getResponseCode() > 299) {
                             try (BufferedReader err = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
-                                System.out.println("1");
                                 throw new IllegalArgumentException("codeToToken response: " + conn.getResponseCode() + ", data: " + err.lines().collect(Collectors.joining("\n")));
                             } catch (Throwable t) {
-                                System.out.println("2");
                                 throw new IllegalArgumentException("codeToToken response: " + conn.getResponseCode(), t);
                             }
                         }
 
-                        System.out.println("Received response from Microsoft server");
 
                         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
                             JSONObject object = new JSONObject(in.lines().collect(Collectors.joining("\n")));
@@ -510,8 +488,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                             accessToken = object.getString("access_token");
                             refreshToken = object.getString("refresh_token");
 
-                            System.out.println("Access Token: " + accessToken);
-                            System.out.println("Refresh Token: " + refreshToken);
                         }
                     }
 
@@ -561,7 +537,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                 }
             });
 
-            System.out.println(ret.get());
         }
 
     }

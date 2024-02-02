@@ -4,19 +4,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>app.elizon</groupId>
-    <artifactId>AuthHelper</artifactId>
-    <version>v0.1-alpha</version>
+    <groupId>live.nerotv</groupId>
+    <artifactId>ZyneonAuth</artifactId>
+    <version>2024.2</version>
     <packaging>jar</packaging>
 
-    <name>AuthHelper</name>
+    <name>ZyneonAuth</name>
 
-    <description>AuthHelper</description>
+    <description>Authenticates Minecraft access with Microsoft Xbox Live login</description>
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <url>elizon.app</url>
 
     <build>
         <plugins>
@@ -62,12 +61,4 @@
             <scope>compile</scope>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
-        </repository>
-    </repositories>
-
 </project>
