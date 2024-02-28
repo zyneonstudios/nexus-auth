@@ -1,6 +1,5 @@
 package app.elizon.authhelper.process.impl;
 
-import java.lang.reflect.Executable;
 import java.util.HashMap;
 
 public abstract class ProcessDetails {

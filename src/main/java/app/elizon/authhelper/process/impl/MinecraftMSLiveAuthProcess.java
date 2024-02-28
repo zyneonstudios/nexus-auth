@@ -231,10 +231,13 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
             String accessToken;
 
-            if(helper!=null) {
-                helper = new ServerHelper();
+            if (helper != null) {
+                helper.stopServer();
             }
-            helper.startServerHeadless(local_port);
+            helper = new ServerHelper();
+
+            @SuppressWarnings("unused")
+            String uri = helper.startServerHeadless(local_port);
 
             HttpURLConnection conn = (HttpURLConnection) new URI("https://login.live.com/oauth20_token.srf").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -243,10 +246,10 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             conn.setReadTimeout(15000);
             conn.setDoOutput(true);
             try (OutputStream out = conn.getOutputStream()) {
-                out.write(("client_id=" + URLEncoder.encode(client_id, "UTF-8") + "&" +
-                        "refresh_token=" + URLEncoder.encode(refreshToken, "UTF-8") + "&" +
+                out.write(("client_id=" + URLEncoder.encode(client_id, StandardCharsets.UTF_8) + "&" +
+                        "refresh_token=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8) + "&" +
                         "grant_type=refresh_token&" +
-                        "redirect_uri=" + URLEncoder.encode("http://localhost:" + local_port, "UTF-8") + "&" +
+                        "redirect_uri=" + URLEncoder.encode("http://localhost:" + local_port, StandardCharsets.UTF_8) + "&" +
                         "scope=XboxLive.signin%20XboxLive.offline_access").getBytes(StandardCharsets.UTF_8));
                 if (conn.getResponseCode() < 200 || conn.getResponseCode() > 299) {
                     try (BufferedReader err = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
@@ -394,6 +397,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             data.put("uuid", uuid);
             data.put("username", name);
 
+            helper.stopServer();
             return data;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -497,13 +501,13 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                     Map<String, String> codeChallengeAndVerifier = generateCodeChallengeAndVerifier();
 
                     try (OutputStream out = conn.getOutputStream()) {
-                        out.write(("client_id=" + URLEncoder.encode(client_id, "UTF-8") + "&" +
-                                "code=" + URLEncoder.encode(ret.get(), "UTF-8") + "&" +
+                        out.write(("client_id=" + URLEncoder.encode(client_id, StandardCharsets.UTF_8) + "&" +
+                                "code=" + URLEncoder.encode(ret.get(), StandardCharsets.UTF_8) + "&" +
                                 "grant_type=authorization_code&" +
-                                "redirect_uri=" + URLEncoder.encode("http://localhost:48521", "UTF-8") + "&" +
+                                "redirect_uri=" + URLEncoder.encode("http://localhost:48521", StandardCharsets.UTF_8) + "&" +
                                 "scope=XboxLive.signin%20XboxLive.offline_access" +
-                                "&code_verifier=" + URLEncoder.encode(verifier, "UTF-8") +
-                                "&code_challenge=" + URLEncoder.encode(codeChallengeAndVerifier.get("code_challenge"), "UTF-8") +
+                                "&code_verifier=" + URLEncoder.encode(verifier, StandardCharsets.UTF_8) +
+                                "&code_challenge=" + URLEncoder.encode(codeChallengeAndVerifier.get("code_challenge"), StandardCharsets.UTF_8) +
                                 "&code_challenge_method=S256").getBytes(StandardCharsets.UTF_8));
 
                         if (conn.getResponseCode() < 200 || conn.getResponseCode() > 299) {
@@ -530,14 +534,14 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             }
         }
 
-        public void startServerHeadless(int port) throws IOException {
+        public String startServerHeadless(int port) throws IOException {
             HttpServer server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
 
-            AtomicReference<String> ret = new AtomicReference<>(null);
+            AtomicReference<String> returnValue = new AtomicReference<>("");
 
             server.createContext("/", exchange -> {
 
-                ret.set(exchange.getRequestURI().getQuery());
+                returnValue.set(exchange.getRequestURI().getQuery());
 
                 try {
                     exchange.getRequestHeaders().add("Content-Type", "text/html; charset=UTF-8");
@@ -561,12 +565,10 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                         os.write(bytes);
                         os.flush();
                     }
-                } catch (Exception ex) {
-                    server.stop(0);
-                } finally {
-                    server.stop(0);
-                }
+                } catch (Exception ignored) {}
+                server.stop(0);
             });
+            return returnValue.getPlain();
         }
 
     }
