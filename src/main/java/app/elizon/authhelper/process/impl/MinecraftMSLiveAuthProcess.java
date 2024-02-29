@@ -236,9 +236,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             }
             helper = new ServerHelper();
 
-            @SuppressWarnings("unused")
-            String uri = helper.startServerHeadless(local_port);
-
             HttpURLConnection conn = (HttpURLConnection) new URI("https://login.live.com/oauth20_token.srf").toURL().openConnection();
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setRequestMethod("POST");
@@ -440,7 +437,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
         @SuppressWarnings("unused")
         public void startServer(int port) throws IOException {
-            if(server != null) {
+            if (server != null) {
                 server.stop(0);
             }
 
@@ -455,7 +452,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
         }
 
         public void stopServer() {
-            if(server != null) {
+            if (server != null) {
                 server.stop(0);
                 server = null;
             }
@@ -464,6 +461,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
         static class WebHandler implements HttpHandler {
             @Override
             public void handle(HttpExchange exchange) {
+                data.clear();
                 AtomicReference<String> ret = new AtomicReference<>(null);
 
                 try {
@@ -478,9 +476,9 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                         exchange.sendResponseHeaders(200, bytes.length);
                         exchange.getResponseBody().write(bytes);
                         exchange.getResponseBody().flush();
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
 
-                    // Entfernen Sie den Code-Präfix
                     ret.set(ret.get().replace("code=", ""));
 
                     String accessToken;
@@ -528,47 +526,5 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
                 }
             }
         }
-
-        public String startServerHeadless(int port) throws IOException {
-            if(server != null) {
-                server.stop(0);
-            }
-            server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
-
-            AtomicReference<String> returnValue = new AtomicReference<>("");
-
-            server.createContext("/", exchange -> {
-
-                returnValue.set(exchange.getRequestURI().getQuery());
-
-                try {
-                    exchange.getRequestHeaders().add("Content-Type", "text/html; charset=UTF-8");
-
-
-
-
-
-
-                    byte[] bytes = "<p>Authentication process started. You can now close this page.</p>".getBytes();
-
-
-
-
-
-
-
-
-                    exchange.sendResponseHeaders(200, bytes.length);
-                    try (OutputStream os = exchange.getResponseBody()) {
-                        os.write(bytes);
-                        os.flush();
-                    }
-                } catch (Exception ignored) {}
-                server.stop(0);
-            });
-            return returnValue.getPlain();
-        }
-
     }
-
 }
