@@ -219,6 +219,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             data.put("username", name);
 
 
+            ServerHelper.data.clear();
             return data;
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
@@ -395,6 +396,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
             data.put("username", name);
 
             helper.stopServer();
+            ServerHelper.data.clear();
             return data;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -403,7 +405,7 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
     public static class ServerHelper {
 
-        public static final HashMap<String, String> data = new HashMap<>();
+        public static HashMap<String, String> data = new HashMap<>();
 
         // Funktion zur Generierung des code_challenge und code_verifier
         private static Map<String, String> generateCodeChallengeAndVerifier() {
@@ -461,7 +463,6 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
         static class WebHandler implements HttpHandler {
             @Override
             public void handle(HttpExchange exchange) {
-                data.clear();
                 AtomicReference<String> ret = new AtomicReference<>(null);
 
                 try {

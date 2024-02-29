@@ -15,6 +15,7 @@ public class ZyneonAuth {
             //AUTHENTICATE AND RETURN DATA
             MinecraftMSLiveAuthProcess process = new MinecraftMSLiveAuthProcess();
             HashMap<String, String> authData = new AuthProcess().startAuthProcess(process);
+            MinecraftMSLiveAuthProcess.ServerHelper.data = new HashMap<>();
 
             //ADDING DATA FROM AUTH DATA TO MAP
             map.put(AuthInfo.ACCESS_TOKEN,authData.get("minecraft_token"));
@@ -40,6 +41,7 @@ public class ZyneonAuth {
             //AUTHENTICATE AND RETURN DATA
             MinecraftMSLiveAuthProcess process = new MinecraftMSLiveAuthProcess();
             HashMap<String, String> authData = new AuthProcess().reAuth(process, refreshToken);
+            MinecraftMSLiveAuthProcess.ServerHelper.data = new HashMap<>();
 
             //ADDING DATA FROM AUTH DATA TO MAP
             map.put(AuthInfo.ACCESS_TOKEN,authData.get("minecraft_token"));
