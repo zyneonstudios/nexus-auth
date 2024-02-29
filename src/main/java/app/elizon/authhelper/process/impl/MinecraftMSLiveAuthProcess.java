@@ -440,17 +440,17 @@ public class MinecraftMSLiveAuthProcess extends ProcessDetails {
 
         @SuppressWarnings("unused")
         public void startServer(int port) throws IOException {
-            if(server == null) {
-                stopServer();
-
-                server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
-                server.createContext("/", new WebHandler());
-                server.start();
-
-                Map<String, String> codes = generateCodeChallengeAndVerifier();
-                verifier = codes.get("code_verifier");
-                new WindowHelper().openWindow(MinecraftMSLiveAuthProcess.MICROSOFT_AUTH_URL + "&code_challenge=" + codes.get("code_challenge") + "&code_challenge_method=S256");
+            if(server != null) {
+                server.stop(0);
             }
+
+            server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
+            server.createContext("/", new WebHandler());
+            server.start();
+
+            Map<String, String> codes = generateCodeChallengeAndVerifier();
+            verifier = codes.get("code_verifier");
+            new WindowHelper().openWindow(MinecraftMSLiveAuthProcess.MICROSOFT_AUTH_URL + "&code_challenge=" + codes.get("code_challenge") + "&code_challenge_method=S256");
 
         }
 
