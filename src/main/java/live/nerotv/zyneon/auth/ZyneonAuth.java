@@ -5,8 +5,11 @@ import app.elizon.authhelper.process.impl.MinecraftMSLiveAuthProcess;
 
 import java.util.HashMap;
 
-@SuppressWarnings("unused")
 public class ZyneonAuth {
+
+    public static void main(String[] args) {
+        getAuthInfos();
+    }
 
     public static HashMap<AuthInfo,String> getAuthInfos() {
         //CREATING MAP

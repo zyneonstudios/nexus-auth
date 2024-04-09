@@ -6,7 +6,7 @@
 
     <groupId>live.nerotv</groupId>
     <artifactId>ZyneonAuth</artifactId>
-    <version>2024.2.2</version>
+    <version>2024.4</version>
     <packaging>jar</packaging>
 
     <name>ZyneonAuth</name>
